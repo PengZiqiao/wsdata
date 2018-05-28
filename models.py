@@ -5,11 +5,19 @@ from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
 
-from .consts import QUANSHI_
-from .utils import Month, Week, gr2change
+from wsdata.consts import QUANSHI_, PATH
+from wsdata.utils import Month, Week, gr2change
 
+db_path = f'sqlite:///{PATH}/db.sqlite'
 
 class WinsunDatabase:
+    def __init__(self):
+        engine = create_engine(db_path)
+        Session = sessionmaker(engine)
+        self.session = Session()
+        self.meta = MetaData()
+        self.meta.reflect(bind=engine)
+
     @staticmethod
     def render_date(by, period):
         """通过日期类型和期数两个参数得到一系列日期相关参数"""
@@ -32,13 +40,6 @@ class WinsunDatabase:
         date_range = (index_sql[0], index_sql[-1])
 
         return date_range, group_by, index_sql, index_label
-
-    def __init__(self):
-        engine = create_engine('sqlite:///e:/gisDataBase/winsun')
-        Session = sessionmaker(engine)
-        self.session = Session()
-        self.meta = MetaData()
-        self.meta.reflect(bind=engine)
 
     def __getitem__(self, item):
         """通过 wd['table_name'] 的方式选中表"""
@@ -161,18 +162,19 @@ class Query:
             labels.append(f'{bins[-1]}+')
 
         # 对bins添加一个最小值0，与一个最值， 如果传入总价段，将万元换算成元
+        bins = bins.copy()
         bins.insert(0, 0)
         bins.append(df_[f'{by}_high'].max() + 1)
         if by == 'tprice':
             bins = [x * 1e4 for x in bins]
 
-        df_[f'{by}_range'] = pd.cut(df_[f'{by}_high'], bins, labels=labels)
+        df_[by] = pd.cut(df_[f'{by}_high'], bins, labels=labels)
 
         return df_.drop(f'{by}_low', axis=1).drop(f'{by}_high', axis=1)
 
     def cut(self, by, bins, labels=None, columns=None):
         df = pd.merge(self.df(), self._cut_label(by, bins, labels))
-        return df.drop(self.__by_name[by], axis=1).pivot_table(index=f'{by}_range', columns=columns, aggfunc='sum')
+        return df.drop(self.__by_name[by], axis=1).pivot_table(index=by, columns=columns, aggfunc='sum')
 
     def cross(self, values, idx_cols, idx_bins, cols_bins):
         """分段交叉分析，在query.filter之后使用
@@ -266,7 +268,7 @@ class Gxj:
 class Shuoli:
     def __init__(self, df_original, df_ajusted, degree, tb_period):
         pct_change = partial(gr2change, degree=degree)
-        df_h = df_original.pct_change().applymap(pct_change)
+        df_h = df_original.pct_change(fill_method=None).applymap(pct_change)
 
         # 调整用参数
         rows = [df_ajusted.iloc[-1:], df_h.iloc[-1:]]
