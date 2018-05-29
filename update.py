@@ -1,10 +1,9 @@
 import json
 from datetime import date
 
-from .models import WinsunDatabase, Week
-from .utils import Spider
-
-path = 'E:/gisDataBase'
+from wsdata.models import WinsunDatabase, Week
+from wsdata.utils import Spider
+from wsdata.consts import PATH
 
 
 def str2date(string):
@@ -16,12 +15,12 @@ class Update(Spider):
 
     def load(self, filename):
         """打开一个json文件,返回object"""
-        with open(f'{path}/{filename}.json', 'r') as f:
+        with open(f'{PATH}/{filename}.json', 'r') as f:
             return json.load(f)
 
     def write(self, text, type_, date_, table):
         """将获得的json文本写入文件"""
-        with open(f'{path}/{type_}_{table}/{date_}.json', 'w') as f:
+        with open(f'{PATH}/{type_}_{table}/{date_}.json', 'w') as f:
             f.write(text)
         print(f'>>> 【{type_} {table} {date_}】is written into file.')
 

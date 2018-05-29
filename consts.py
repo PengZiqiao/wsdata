@@ -13,3 +13,5 @@ QUANSHI = ('城中', '城东', '城南', '河西', '城北', '仙西', '江宁',
 QUANSHI_ = ['仙林' if x == '仙西' else x for x in QUANSHI]
 BUHANLIGAO = QUANSHI[:-2]
 BUHANLIGAOLU = BUHANLIGAO[:-1]
+
+PATH = r'D:\onedrive\winsunDB'
